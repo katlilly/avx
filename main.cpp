@@ -102,7 +102,7 @@ int main(void)
   __m512i indexvector = _mm512_setzero_epi32();
   indexvector = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
   __m512i columnvector;
-  printf("start compression\n");
+  //printf("start compression\n");
   int *rawdatapointer = testdata;
 
   // encode one 512 bit compressed word
@@ -110,7 +110,7 @@ int main(void)
   {
     // gather next 16 ints into a 512 bit register
     columnvector = _mm512_i32gather_epi32(indexvector, rawdatapointer, 4);
-    print_512word_as_32ints(columnvector);
+    //print_512word_as_32ints(columnvector);
 
     // left shift input to correct "column"
     columnvector = _mm512_slli_epi32(columnvector, bitsperint * i);
@@ -127,13 +127,13 @@ int main(void)
   int decompressed_length = 0;
   int mask = 0xff;
   __m512i maskvector = _mm512_set1_epi32(mask);
-  printf("\nstart decompression\n");
+  //printf("\nstart decompression\n");
   // decode ints from one 512 bit word
   for (int i = 0; i < intsper32; i++)
   {
     // get 16 numbers by ANDing mask with compressedword
     temp_decompress = _mm512_and_epi32(compressedword, maskvector);
-    print_512word_as_32ints(temp_decompress);
+    //print_512word_as_32ints(temp_decompress);
     
     // put those numbers in output array using scatter instruction
     _mm512_i32scatter_epi32(decompressed, indexvector, temp_decompress, 4);

@@ -1,5 +1,9 @@
 main:
+	g++ -march=native -o testavxSimple10 simple10avx.cpp testavxsimple10.cpp
+
+hello:
 	gcc -march=native -o hello_avx hello_avx.c
+
 
 
 
