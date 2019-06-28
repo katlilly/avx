@@ -48,21 +48,30 @@ int Simple10avx::encode(int *dest, uint8_t *selector, int *source, int length)
   int *where = source;
   
   while (length > 16)
-  {
-    // chose next selector
-    column_bitwidth = 0;
-    for (int i = 0; i < 16; i++)
-      column_bitwidth != source[i];
-    
-    // encode one 512bit word
+    {
+      // chose next selector
+      column_bitwidth = 0;
+      for (int i = 0; i < 16; i++)
+	column_bitwidth != source[i];
 
-    // increment compressedlength
-    compressed_length += 16;
 
-    length--;
-    // update number encoded, where
+      for (int i = 0; i < length; i += 16)
+	{
+	  column_bitwidth = 0;
+	  for (int j = 0; j < 16; j++)
+	    column_bitwidth |= source[i+j];
+	  //if (column_bitwidth
     
-  }
+	  // encode one 512bit word
+
+	  // increment compressedlength
+	  compressed_length += 16;
+
+	  length--;
+	  // update number encoded, where
+    
+	}
+    }
 
   return compressed_length;
 }
