@@ -57,7 +57,7 @@ int main(void)
   uint8_t *selector = new uint8_t[length]; // this is max possible length
   uint32_t compressed_length;
   compressed_length = compressor->encode(encoded, selector, postingslist, length);
-  printf("compressed length: %d\n", compressed_length);
+  printf("compressed length: %u\n", compressed_length);
 
   
   
