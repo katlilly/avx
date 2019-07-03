@@ -33,7 +33,7 @@ int abs(int input)
 int main(void)
 {
   /*
-    Create some test data
+    Create some test data and print it to screen
    */
   int length = 100;
   int *postingslist = new int[length];
@@ -44,21 +44,22 @@ int main(void)
   print_postings_list(postingslist, length);
   
   /*
-    Initialise a "simple10" avx compressor
+    Initialise a "simple10" avx compressor and show table
    */
   Simple10avx *compressor = new Simple10avx();
-  //compressor->print_table();
+  compressor->print_table();
 
   /*
     Encode one postings list
    */
   // note encoded length could be 16 times longer, but not in current test setup
-  int *encoded = new int[length];
-  uint8_t selector;
+  uint32_t *encoded = new uint32_t[length];
+  uint8_t *selector = new uint8_t[length]; // this is max possible length
   uint32_t compressed_length;
-  compressed_length = compressor->encode(encoded, &selector, postingslist, length);
+  compressed_length = compressor->encode(encoded, selector, postingslist, length);
   printf("compressed length: %d\n", compressed_length);
 
+  
   
   
   return 0;

@@ -35,8 +35,8 @@ int main(void)
   //print_512word_as_32ints(gathered);
 
   Simple10avx *avxcompressor = new Simple10avx();
-  int **table = new int*[10];
-  avxcompressor->make_table(table);
+  //int **table = new int*[10];
+  //avxcompressor->make_table(table);
   //printf("%d\n", avxcompressor->num_selectors);
   //avxcompressor->print_table(table);
 
