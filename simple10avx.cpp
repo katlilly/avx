@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <immintrin.h>
 #include "simple10avx.h"
 #include "fls.h"
 
@@ -25,77 +26,83 @@ void Simple10avx::dgaps_to_bitwidths(int *dest, int *source, int length)
     dest[i] = fls(source[i]);
 }
 
-int encode_one_word(uint32_t *dest, uint8_t *dest_selector,
-		    int selector, int *source, int length)
+// return value will be number of ints compressed, so we know where to
+// move raw to.  each time we return from this function we need to
+// increment selector by 1 byte and dest by 64 bytes (16 ints / 512 bits)
+int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector)
 {
+  int length = end - raw;
+  printf("\nlength = %d\n", length);
+  printf("next value: %d\n", *raw);
+  printf("last value: %d\n", *(end - 1));
+    
+  __m512i compressedword = _mm512_setzero_epi32();
+  uint8_t selector_row = chose_selector(raw, end);
+  
+  // write out selector;
+  selector[0] = selector_row;
+  printf("chose selector %d\n", selector_row);
+
+  // do compression in a 512 bit register
+
+
+  // write out compressed bytes with scatter instruction
+
+
+  // this isn't the correct return value for the last word
+  return 16 * table[selector_row].intsper32;
 
 }
 
 
-int Simple10avx::encode(uint32_t *dest, uint8_t *selector, int *source,
-			int length)
+int Simple10avx::encode(uint32_t *dest, int *raw, int* end, uint8_t *selector)
 {
-  // this is counted in 32 bit chunks, so for every "compressed word"
-  // (except usualy the last one) this will be incremented by 16
-  int compressed_length = 0;
-  int column_bitwidth;
-  int *where = source; // pointer to next dgap to compress
+  int dgaps_compressed = 0;
+  int selector_num = 0;
 
-  if (length > 16)
+  while (raw + dgaps_compressed < end)
   {
-    printf("starting at %d\n", *source);
-    int row = chose_selector(13);
-    printf("chose selector row %d, %d ints per 32\n", row, table[row].intsper32);
-    
-    where += table[row].intsper32;
-      
+    dgaps_compressed += encode_one_word(dest + 16, raw + dgaps_compressed, end,
+					selector + selector_num);
+    selector_num++;
+    printf("dgaps compressed: %d\n", dgaps_compressed);
   }
 
-
-
-    // deal with ends of lists / short lists later
-
-
-
-  
-  while (length > 16)
-    {
-      // chose next selector
-      column_bitwidth = 0;
-      for (int i = 0; i < 16; i++)
-	column_bitwidth != source[i];
-
-
-      for (int i = 0; i < length; i += 16)
-	{
-	  column_bitwidth = 0;
-	  for (int j = 0; j < 16; j++)
-	    column_bitwidth |= source[i+j];
-	  //if (column_bitwidth
-    
-	  // encode one 512bit word
-
-	  // increment compressedlength
-	  compressed_length += 16;
-
-	  length--;
-	  // update number encoded, where
-    
-	}
-    }
-
-  return compressed_length;
+  return dgaps_compressed;
 }
+
 
 /* 
    Return the row number to use in the selector table
 */
-int Simple10avx::chose_selector(int largest_column_width)
+int Simple10avx::chose_selector(int *raw, int* end)
 {
-  int row;
+  int length = end - raw;
+  int bitsused = 0;
+  int column_bitwidth;
+  int column;
+  int largest_column_bw = 0;
+
+  for (int i = 0; i < length; i += 16)
+  {
+    column = 0;
+    for (int j = 0; j < 16; j++)
+    {
+      if ((raw + i + j) < end)
+	column |= raw[i+j];
+      column_bitwidth = fls(column);
+    }
+    if (column_bitwidth > largest_column_bw)
+      largest_column_bw = column_bitwidth;
+    bitsused += column_bitwidth; 
+    if (bitsused > 32)
+      break;
+  }
+
+  uint8_t row;
   for (int i = 0; i < num_selectors; i++)
   {
-    if (largest_column_width <= table[i].bitwidth)
+    if (largest_column_bw <= table[i].bitwidth)
       row = i;
     else
       break;

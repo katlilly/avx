@@ -35,11 +35,11 @@ int main(void)
   /*
     Create some test data and print it to screen
    */
-  int length = 100;
+  int length = 200;
   int *postingslist = new int[length];
   std::default_random_engine generator;
   std::normal_distribution<double> distribution(32, 20);
-  for (int i = 0; i < 100; i++)
+  for (int i = 0; i < length; i++)
     postingslist[i] = abs((int) distribution(generator));
   print_postings_list(postingslist, length);
   
@@ -56,7 +56,9 @@ int main(void)
   uint32_t *encoded = new uint32_t[length];
   uint8_t *selector = new uint8_t[length]; // this is max possible length
   uint32_t compressed_length;
-  compressed_length = compressor->encode(encoded, selector, postingslist, length);
+  compressed_length = compressor->encode(encoded, postingslist, postingslist+length, selector);
+
+  
   printf("compressed length: %u\n", compressed_length);
 
   

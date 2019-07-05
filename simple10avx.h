@@ -64,12 +64,10 @@ class Simple10avx
  public:
   void print_table();
   void dgaps_to_bitwidths(int *dest, int *source, int length);
-  int encode(uint32_t *dest, uint8_t *selector, int *source,
-	     int length);
+  int encode(uint32_t *dest, int *raw, int* end, uint8_t *selector);
 
  private:
-  int chose_selector(int largest_column_width);
-  int encode_one_word(uint32_t *dest, uint8_t *dest_selector,
-		      int selector, int *source, int length);
-  
+  int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
+  int chose_selector(int *raw, int* end);
+
 };
