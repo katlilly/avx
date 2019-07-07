@@ -12,11 +12,13 @@ class Simple10avx
   int num_selectors;
   row *table;
   int registerbits = 512;
+  int num_compressed_512bit_words = 0;
+  int num_compressed_32bit_words = 0;
 
  private:
-  int current_list_length;
-  int remaining_length;
-  int current_selector;
+  //int current_list_length;
+  //int remaining_length;
+  //int current_selector;
   
   
  public:
@@ -69,5 +71,6 @@ class Simple10avx
  private:
   int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
   int chose_selector(int *raw, int* end);
-
+  int min(int a, int b);
+  
 };

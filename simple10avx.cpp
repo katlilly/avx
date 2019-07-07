@@ -4,6 +4,12 @@
 #include "fls.h"
 
 
+int Simple10avx::min(int a, int b)
+{
+  return a < b ? a : b;
+}
+
+
 void Simple10avx::print_table()
 {
   printf("\nSimple 10 AVX selector table:\n");
@@ -26,50 +32,6 @@ void Simple10avx::dgaps_to_bitwidths(int *dest, int *source, int length)
     dest[i] = fls(source[i]);
 }
 
-// return value will be number of ints compressed, so we know where to
-// move raw to.  each time we return from this function we need to
-// increment selector by 1 byte and dest by 64 bytes (16 ints / 512 bits)
-int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector)
-{
-  int length = end - raw;
-  printf("\nlength = %d\n", length);
-  printf("next value: %d\n", *raw);
-  printf("last value: %d\n", *(end - 1));
-    
-  __m512i compressedword = _mm512_setzero_epi32();
-  uint8_t selector_row = chose_selector(raw, end);
-  
-  // write out selector;
-  selector[0] = selector_row;
-  printf("chose selector %d\n", selector_row);
-
-  // do compression in a 512 bit register
-
-
-  // write out compressed bytes with scatter instruction
-
-
-  // this isn't the correct return value for the last word
-  return 16 * table[selector_row].intsper32;
-
-}
-
-
-int Simple10avx::encode(uint32_t *dest, int *raw, int* end, uint8_t *selector)
-{
-  int dgaps_compressed = 0;
-  int selector_num = 0;
-
-  while (raw + dgaps_compressed < end)
-  {
-    dgaps_compressed += encode_one_word(dest + 16, raw + dgaps_compressed, end,
-					selector + selector_num);
-    selector_num++;
-    printf("dgaps compressed: %d\n", dgaps_compressed);
-  }
-
-  return dgaps_compressed;
-}
 
 
 /* 
@@ -109,3 +71,49 @@ int Simple10avx::chose_selector(int *raw, int* end)
   }
   return row;
 }
+
+
+// return value will be number of ints compressed, so we know where to
+// move raw to.  each time we return from this function we need to
+// increment selector by 1 byte and dest by 64 bytes (16 ints / 512 bits)
+int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector)
+{
+  int length = end - raw;
+  printf("\nlength = %d\n", length);
+  printf("next value: %d\n", *raw);
+  printf("last value: %d\n", *(end - 1));
+    
+  __m512i compressedword = _mm512_setzero_epi32();
+  uint8_t selector_row = chose_selector(raw, end);
+  
+  // write out selector;
+  selector[0] = selector_row;
+  printf("chose selector %d, %d bits per int\n", selector_row, table[selector_row].bitwidth);
+
+  // do compression in a 512 bit register
+
+
+  // write out compressed bytes with scatter instruction
+
+
+
+  num_compressed_512bit_words++;
+  num_compressed_32bit_words += 16; 
+  return min(length, 16 * table[selector_row].intsper32);
+}
+
+
+int Simple10avx::encode(uint32_t *dest, int *raw, int* end, uint8_t *selector)
+{
+  int dgaps_compressed = 0;
+
+  while (raw + dgaps_compressed < end)
+  {
+    dgaps_compressed += encode_one_word(dest, raw + dgaps_compressed, end, selector++);
+    dest += 16;
+    printf("dgaps compressed: %d\n", dgaps_compressed);
+  }
+
+  return dgaps_compressed;
+}
+

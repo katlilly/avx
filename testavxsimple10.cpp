@@ -44,7 +44,7 @@ int main(void)
   print_postings_list(postingslist, length);
   
   /*
-    Initialise a "simple10" avx compressor and show table
+    Initialise a "simple10" avx compressor and show the table
    */
   Simple10avx *compressor = new Simple10avx();
   compressor->print_table();
@@ -55,14 +55,23 @@ int main(void)
   // note encoded length could be 16 times longer, but not in current test setup
   uint32_t *encoded = new uint32_t[length];
   uint8_t *selector = new uint8_t[length]; // this is max possible length
-  uint32_t compressed_length;
-  compressed_length = compressor->encode(encoded, postingslist, postingslist+length, selector);
+  uint32_t num_dgaps_compressed;
+  num_dgaps_compressed = compressor->encode(encoded, postingslist, postingslist+length, selector);
 
+  if (length != num_dgaps_compressed)
+    exit(printf("%d != %d\n", length, num_dgaps_compressed));
   
-  printf("compressed length: %u\n", compressed_length);
+  
+  
 
-  
-  
+  printf("\nselectors used:\n");
+  for (int i = 0; i < compressor->num_compressed_512bit_words; i++)
+  {
+    printf("selector %d: %d bits per int, %d ints per 32\n", selector[i],
+	   compressor->table[selector[i]].bitwidth, compressor->table[selector[i]].intsper32);
+  }
+
+  printf("Compressed data:\n");
   
   return 0;
 }
