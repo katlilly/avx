@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <immintrin.h>
+#include <math.h>
 #include "simple10avx.h"
 #include "fls.h"
 
@@ -112,15 +113,15 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
     // gather next 16 ints into a 512 bit register
     columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
 
-    printf("column vector prior to shift:\n");
-    print_512word_as_32ints(columnvector);
+    //printf("column vector prior to shift:\n");
+    //print_512word_as_32ints(columnvector);
     
     // left shift input to correct "column"
-    printf("shift amount: %d\n", table[selector_row].bitwidth * i);
+    //printf("shift amount: %d\n", table[selector_row].bitwidth * i);
     columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
 
-    printf("column vector after shift:\n");
-    print_512word_as_32ints(columnvector);
+    //printf("column vector after shift:\n");
+    //print_512word_as_32ints(columnvector);
     
     // pack this column of 16 dgaps into compressed 512 bit word
     compressedword = _mm512_or_epi32(compressedword, columnvector);
@@ -128,7 +129,7 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
   }
 
   // write out compressed data to destination with scatter instruction
-  _mm512_i32scatter_epi32(dest, indexvector, compressedword, 4); // scale = 1 or 4 ??
+  _mm512_i32scatter_epi32(dest, indexvector, compressedword, 4); 
 
   // record size of compressed data and return number of dgaps compressed
   num_compressed_512bit_words++;
@@ -151,3 +152,46 @@ int Simple10avx::encode(uint32_t *dest, int *raw, int* end, uint8_t *selector)
   return dgaps_compressed;
 }
 
+
+int Simple10avx::decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors)
+{
+  int dgaps_decompressed = 0;
+  //while ( ...start with just first word for now
+
+  // get information from selectors array
+  int bits_per_dgap = table[selectors[0]].bitwidth;
+  int dgaps_per_int = table[selectors[0]].intsper32;
+  int mask = pow(2, bits_per_dgap) - 1;
+  __m512i mask_vect = _mm512_set1_epi32(mask);
+
+  printf("selector %d, %d bits per int, %d dgaps per int\n", *selectors,
+	 table[selectors[0]].bitwidth, table[selectors[0]].intsper32);
+  
+  // load 512 bits of compressed data into a register
+  __m512i indexvector = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+  __m512i compressed_word = _mm512_i32gather_epi32(indexvector, encoded, 4);
+  
+  __m512i decomp_vect; // a temporary 512 bit vector for decoding
+  for (int i = 0; i < dgaps_per_int; i++)
+  {
+    // get 16 dgaps by ANDing mask with compressed word
+    decomp_vect = _mm512_and_epi32(compressed_word, mask_vect);
+
+    // write those 16 numbers to uint32_t array "dest"
+    _mm512_i32scatter_epi32(dest, indexvector, decomp_vect, 4);
+
+    // right shift the remaining data in the compressed word
+    compressed_word = _mm512_srli_epi32(compressed_word, bits_per_dgap);
+
+    dgaps_decompressed += 16;
+    dest += 16;
+  }
+
+  // check for any dgap other than the first one being a zero? that won't always work?
+  // if remaining length less than 64 check for any zeros?
+  // how can i deal with the possibility of a zero at the start of a list?
+  // i guess easiest is checking for two zeros in a row?
+  
+  
+  return dgaps_decompressed;
+}

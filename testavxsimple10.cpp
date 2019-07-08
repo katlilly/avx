@@ -54,9 +54,9 @@ int main(void)
    */
   // note encoded length could be 16 times longer, but not in current test setup
   uint32_t *encoded = new uint32_t[length];
-  uint8_t *selector = new uint8_t[length]; // this is max possible length
+  uint8_t *selectors = new uint8_t[length]; // this is max possible length
   uint32_t num_dgaps_compressed;
-  num_dgaps_compressed = compressor->encode(encoded, postingslist, postingslist+length, selector);
+  num_dgaps_compressed = compressor->encode(encoded, postingslist, postingslist+length, selectors);
 
   if (length != num_dgaps_compressed)
     exit(printf("%d != %d\n", length, num_dgaps_compressed));
@@ -64,16 +64,22 @@ int main(void)
   printf("\nselectors used:\n");
   for (int i = 0; i < compressor->num_compressed_512bit_words; i++)
   {
-    printf("selector %d: %d bits per int, %d ints per 32\n", selector[i],
-  	   compressor->table[selector[i]].bitwidth, compressor->table[selector[i]].intsper32);
+    printf("selector %d: %d bits per int, %d ints per 32\n", selectors[i],
+  	   compressor->table[selectors[i]].bitwidth, compressor->table[selectors[i]].intsper32);
   }
 
+  printf("encoded data:\n");
   printf("%d\n", compressor->num_compressed_32bit_words);
   for (int i = 0; i < compressor->num_compressed_32bit_words; i++)
   {
     printf("%u\n", encoded[i]);
   }
 
-    
+  uint32_t *decoded = new uint32_t[length * 2];
+  int dgaps_decompressed = compressor->decode(decoded, encoded, encoded + compressor->num_compressed_32bit_words, selectors);
+
+  for (int i = 0; i < dgaps_decompressed; i++)
+    printf("%2u  %2u\n", postingslist[i], decoded[i]);
+  
   return 0;
 }

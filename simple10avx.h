@@ -68,12 +68,12 @@ class Simple10avx
  public:
   void print_table();
   void dgaps_to_bitwidths(int *dest, int *source, int length);
-  int encode(uint32_t *dest, int *raw, int* end, uint8_t *selector);
-  int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
+  int encode(uint32_t *dest, int *raw, int* end, uint8_t *selectors);
   void print_512word_as_32ints(__m512i word);
+  int decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors);
 
  private:
-  //int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
+  int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
   int chose_selector(int *raw, int* end);
   int min(int a, int b);
   
