@@ -3,6 +3,14 @@
 #include "simple10avx.h"
 #include "fls.h"
 
+void Simple10avx::print_512word_as_32ints(__m512i word)
+{
+  int *number = (int *) &word;
+  for (int i = 0; i < 16; i++)
+    printf("%d ", number[i]);
+  printf("\n");
+  
+}
 
 int Simple10avx::min(int a, int b)
 {
@@ -99,21 +107,28 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
 
   // will need to check for overrun here... and add zeros instead of
   // whatever rubbish is after the end of my raw data
-  for (int i = 0; i < table->intsper32; i++)
+  for (int i = 0; i < table[selector_row].intsper32; i++)
   {
     // gather next 16 ints into a 512 bit register
     columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
 
+    printf("column vector prior to shift:\n");
+    print_512word_as_32ints(columnvector);
+    
     // left shift input to correct "column"
-    columnvector = _mm512_slli_epi32(columnvector, table->bitwidth * i);
+    printf("shift amount: %d\n", table[selector_row].bitwidth * i);
+    columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
 
+    printf("column vector after shift:\n");
+    print_512word_as_32ints(columnvector);
+    
     // pack this column of 16 dgaps into compressed 512 bit word
     compressedword = _mm512_or_epi32(compressedword, columnvector);
     raw += 16;
   }
 
   // write out compressed data to destination with scatter instruction
-  _mm512_i32scatter_epi32(dest, indexvector, compressedword, 1); // scale = 1 or 4 ??
+  _mm512_i32scatter_epi32(dest, indexvector, compressedword, 4); // scale = 1 or 4 ??
 
   // record size of compressed data and return number of dgaps compressed
   num_compressed_512bit_words++;

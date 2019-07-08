@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <immintrin.h>
 
 class Simple10avx
 {
@@ -68,9 +69,11 @@ class Simple10avx
   void print_table();
   void dgaps_to_bitwidths(int *dest, int *source, int length);
   int encode(uint32_t *dest, int *raw, int* end, uint8_t *selector);
+  int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
+  void print_512word_as_32ints(__m512i word);
 
  private:
-  int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
+  //int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
   int chose_selector(int *raw, int* end);
   int min(int a, int b);
   

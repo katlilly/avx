@@ -45,10 +45,10 @@ int main(void)
   
   /*
     Initialise a "simple10" avx compressor and show the table
-   */
+  */
   Simple10avx *compressor = new Simple10avx();
   compressor->print_table();
-
+  
   /*
     Encode one postings list
    */
@@ -61,14 +61,11 @@ int main(void)
   if (length != num_dgaps_compressed)
     exit(printf("%d != %d\n", length, num_dgaps_compressed));
   
-  
-  
-
   printf("\nselectors used:\n");
   for (int i = 0; i < compressor->num_compressed_512bit_words; i++)
   {
     printf("selector %d: %d bits per int, %d ints per 32\n", selector[i],
-	   compressor->table[selector[i]].bitwidth, compressor->table[selector[i]].intsper32);
+  	   compressor->table[selector[i]].bitwidth, compressor->table[selector[i]].intsper32);
   }
 
   printf("%d\n", compressor->num_compressed_32bit_words);
@@ -77,13 +74,6 @@ int main(void)
     printf("%u\n", encoded[i]);
   }
 
-  printf("\n%d\n", compressor->num_compressed_512bit_words);
-  for (int i = 0; i < compressor->num_compressed_512bit_words; i++)
-  {
-    printf("%u\n", selector[i]);
-  }
-
-  
     
   return 0;
 }
