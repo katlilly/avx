@@ -71,7 +71,19 @@ int main(void)
 	   compressor->table[selector[i]].bitwidth, compressor->table[selector[i]].intsper32);
   }
 
-  printf("Compressed data:\n");
+  printf("%d\n", compressor->num_compressed_32bit_words);
+  for (int i = 0; i < compressor->num_compressed_32bit_words; i++)
+  {
+    printf("%u\n", encoded[i]);
+  }
+
+  printf("\n%d\n", compressor->num_compressed_512bit_words);
+  for (int i = 0; i < compressor->num_compressed_512bit_words; i++)
+  {
+    printf("%u\n", selector[i]);
+  }
+
   
+    
   return 0;
 }

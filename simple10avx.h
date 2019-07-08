@@ -16,9 +16,10 @@ class Simple10avx
   int num_compressed_32bit_words = 0;
 
  private:
-  //int current_list_length;
-  //int remaining_length;
-  //int current_selector;
+  // below will be used in decompression, not compression
+  int current_list_length;
+  int remaining_length;
+  int current_selector;
   
   
  public:
@@ -60,7 +61,7 @@ class Simple10avx
 
   ~Simple10avx()
     {
-      delete table;
+      delete [] table;
     }
 
  public:

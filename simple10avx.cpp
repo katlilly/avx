@@ -78,25 +78,44 @@ int Simple10avx::chose_selector(int *raw, int* end)
 // increment selector by 1 byte and dest by 64 bytes (16 ints / 512 bits)
 int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector)
 {
+  // will need to pack with zeros when we get to the end of a list to fill the register
+  // blocks of compressed data will be preceded by their compressed length
+  
   int length = end - raw;
   printf("\nlength = %d\n", length);
   printf("next value: %d\n", *raw);
   printf("last value: %d\n", *(end - 1));
-    
-  __m512i compressedword = _mm512_setzero_epi32();
+
+  // chose and write out selector
   uint8_t selector_row = chose_selector(raw, end);
-  
-  // write out selector;
   selector[0] = selector_row;
   printf("chose selector %d, %d bits per int\n", selector_row, table[selector_row].bitwidth);
 
-  // do compression in a 512 bit register
+  // do the compression in a 512 bit register
+  __m512i compressedword = _mm512_setzero_epi32();
+  __m512i indexvector = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+  //__m512i indexvector = _mm512_set_epi32(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+  __m512i columnvector;
 
+  // will need to check for overrun here... and add zeros instead of
+  // whatever rubbish is after the end of my raw data
+  for (int i = 0; i < table->intsper32; i++)
+  {
+    // gather next 16 ints into a 512 bit register
+    columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
 
-  // write out compressed bytes with scatter instruction
+    // left shift input to correct "column"
+    columnvector = _mm512_slli_epi32(columnvector, table->bitwidth * i);
 
+    // pack this column of 16 dgaps into compressed 512 bit word
+    compressedword = _mm512_or_epi32(compressedword, columnvector);
+    raw += 16;
+  }
 
+  // write out compressed data to destination with scatter instruction
+  _mm512_i32scatter_epi32(dest, indexvector, compressedword, 1); // scale = 1 or 4 ??
 
+  // record size of compressed data and return number of dgaps compressed
   num_compressed_512bit_words++;
   num_compressed_32bit_words += 16; 
   return min(length, 16 * table[selector_row].intsper32);
