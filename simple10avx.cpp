@@ -51,12 +51,12 @@ int Simple10avx::chose_selector(int *raw, int* end)
   int length = end - raw;
   int bitsused = 0;
   int column_bitwidth;
-  int column;
+  //int column;
   int largest_column_bw = 0;
 
   for (int i = 0; i < length; i += 16)
   {
-    column = 0;
+    int column = 0;
     for (int j = 0; j < 16; j++)
     {
       if ((raw + i + j) < end)

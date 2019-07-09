@@ -59,7 +59,7 @@ int main(void)
   num_dgaps_compressed = compressor->encode(encoded, postingslist, postingslist+length, selectors);
 
   if (length != num_dgaps_compressed)
-    exit(printf("%d != %d\n", length, num_dgaps_compressed));
+    exit(printf("%d != %u\n", length, num_dgaps_compressed));
   
   printf("\nselectors used:\n");
   for (int i = 0; i < compressor->num_compressed_512bit_words; i++)
@@ -79,7 +79,7 @@ int main(void)
   int dgaps_decompressed = compressor->decode(decoded, encoded, encoded + compressor->num_compressed_32bit_words, selectors);
 
   for (int i = 0; i < dgaps_decompressed; i++)
-    printf("%2u  %2u\n", postingslist[i], decoded[i]);
+    printf("%2d  %2u\n", postingslist[i], decoded[i]);
   
   return 0;
 }

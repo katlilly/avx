@@ -76,12 +76,12 @@ int main(void)
   __m512i compressedword = _mm512_setzero_epi32();
 
   int wordbits = 0;
-  int column_bitwidth;
+  //int column_bitwidth;
   int largest_column_bw = 0;
   
   for (int j = 0; j < testlength; j += 16)
   {
-    column_bitwidth = 0;
+    int column_bitwidth = 0;
     for (int i = 0; i < 16; i++)
       column_bitwidth |= testdata[i+j];
     //printf("bits needed for %dth column: %d\n", j/16, fls(column_bitwidth));
