@@ -30,9 +30,9 @@ int abs(int input)
 }
 
 
-int min(int a, int b)
+int max(int a, int b)
 {
-  return a < b ? a : b;
+  return a > b ? a : b;
 }
 
 
@@ -59,7 +59,7 @@ int main(void)
   /*
     Encode one postings list
   */
-  uint32_t *encoded = new uint32_t[min(16, length)]; // will this always be big enough?
+  uint32_t *encoded = new uint32_t[max(16, length)]; // will this always be big enough?
   uint8_t *selectors = new uint8_t[length];          // this is max possible length
   uint32_t num_dgaps_compressed;
   num_dgaps_compressed = compressor->encode(encoded, postingslist, postingslist+length, selectors);
