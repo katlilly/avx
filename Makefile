@@ -1,5 +1,4 @@
 main:
-	rm compressed.bin
 	g++ -Wall -march=native -o testavxSimple10 simple10avx.cpp testavxsimple10.cpp
 
 hello:

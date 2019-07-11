@@ -71,9 +71,7 @@ class Simple10avx
   int encode(uint32_t *dest, int *raw, int* end, uint8_t *selectors);
   void print_512word_as_32ints(__m512i word);
   int decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors);
-  int serialise(const char *filename, uint length, uint8_t *selectors, uint32_t *encoded);
-  int readfromfile(const char *filename, uint32_t *comp_dest, uint8_t *selectors_dest);
-
+  
 
  private:
   int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
