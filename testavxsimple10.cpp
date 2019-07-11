@@ -42,13 +42,19 @@ int main(void)
     Create some test data and print it to screen
    */
   uint length = 200;
-  int *postingslist = new int[length];
+  int *postingslist = new int[length + 16];
   std::default_random_engine generator;
   std::normal_distribution<double> distribution(32, 20);
   printf("test data:\n");
   for (uint i = 0; i < length; i++)
     postingslist[i] = abs((int) distribution(generator));
-  print_postings_list(postingslist, length);
+  /* 
+     add 16 zeros to the end, makes it easier for now, but this is not the way to do it, too slow and not smart
+  */
+  for (uint i = length; i < length+16; i++)
+    postingslist[i] = 0;
+  print_postings_list(postingslist, length+16);
+
   
   /*
     Initialise a "simple10" avx compressor and show the table
@@ -79,8 +85,10 @@ int main(void)
   
 
   uint32_t *decoded = new uint32_t[length * 2];
-  int dgaps_decompressed = compressor->decode(decoded, encoded, encoded + compressor->num_compressed_32bit_words, selectors);
-
+  int dgaps_decompressed = compressor->decode(decoded, encoded, encoded + compressor->num_compressed_32bit_words, selectors, 4);
+  //dgaps_decompressed += compressor->decode(decoded + dgaps_decompressed, encoded + 16, encoded + compressor->num_compressed_32bit_words, selectors + 1);
+  
+  
   printf("\nraw | decoded:\n");
   for (int i = 0; i < dgaps_decompressed; i++)
     printf("%2d  %2u\n", postingslist[i], decoded[i]);

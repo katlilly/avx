@@ -51,7 +51,6 @@ int Simple10avx::chose_selector(int *raw, int* end)
   int length = end - raw;
   int bitsused = 0;
   int column_bitwidth;
-  //int column;
   int largest_column_bw = 0;
 
   for (int i = 0; i < length; i += 16)
@@ -91,7 +90,7 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
   // blocks of compressed data will be preceded by their compressed length
   
   int length = end - raw;
-  printf("\nlength = %d\n", length);
+  printf("\nremaining length = %d\n", length);
   printf("next value: %d\n", *raw);
   printf("last value: %d\n", *(end - 1));
 
@@ -100,41 +99,44 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
   selector[0] = selector_row;
   printf("chose selector %d, %d bits per int\n", selector_row, table[selector_row].bitwidth);
 
-  // do the compression in a 512 bit register
+  /*
+    Do the compression in a 512 bit register
+  */
   __m512i compressedword = _mm512_setzero_epi32();
   __m512i indexvector = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-  //__m512i indexvector = _mm512_set_epi32(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
   __m512i columnvector;
 
   // will need to check for overrun here... and add zeros instead of
   // whatever rubbish is after the end of my raw data
   for (int i = 0; i < table[selector_row].intsper32; i++)
   {
+    if (raw + 16 > end)
+      break;
     // gather next 16 ints into a 512 bit register
     columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
 
-    //printf("column vector prior to shift:\n");
-    //print_512word_as_32ints(columnvector);
-    
     // left shift input to correct "column"
-    //printf("shift amount: %d\n", table[selector_row].bitwidth * i);
     columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
 
-    //printf("column vector after shift:\n");
-    //print_512word_as_32ints(columnvector);
-    
     // pack this column of 16 dgaps into compressed 512 bit word
     compressedword = _mm512_or_epi32(compressedword, columnvector);
     raw += 16;
   }
 
-  // write out compressed data to destination with scatter instruction
+  /*
+    write out compressed data back to 32 bit ints
+  */
   _mm512_i32scatter_epi32(dest, indexvector, compressedword, 4); 
 
-  // record size of compressed data and return number of dgaps compressed
+  /*
+    record size of compressed data and return number of dgaps compressed
+  */
   num_compressed_512bit_words++;
-  num_compressed_32bit_words += 16; 
+  num_compressed_32bit_words += 16;
   return min(length, 16 * table[selector_row].intsper32);
+  // return value is correct, but would be good to be able to
+  // decompress only knowing the compressed size adn still get the
+  // right number of dgaps back out, so need to make sure i pack with zeros
 }
 
 
@@ -153,7 +155,21 @@ int Simple10avx::encode(uint32_t *dest, int *raw, int* end, uint8_t *selector)
 }
 
 
-int Simple10avx::decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors)
+int Simple10avx::decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors, int num_s)
+{
+  int dgaps_decompressed = 0;
+  int i = 0;
+  
+  while (i < num_s)
+  {
+    dgaps_decompressed += decode_one_word(dest + dgaps_decompressed, encoded + i*16, end, selectors++);
+    i++;
+  }
+
+  return dgaps_decompressed;
+}
+
+int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors)
 {
   int dgaps_decompressed = 0;
   //while ( ...start with just first word for now
