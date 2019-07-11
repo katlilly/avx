@@ -80,6 +80,15 @@ int main(void)
 
   for (int i = 0; i < dgaps_decompressed; i++)
     printf("%2d  %2u\n", postingslist[i], decoded[i]);
+
+  compressor->serialise("compressed.bin", compressor->num_compressed_512bit_words,
+			selectors, encoded);
+
+  uint32_t *file_compressed;
+  uint8_t *file_selectors;
+  compressor->readfromfile("compressed.bin", file_compressed, file_selectors);
+  for (int i = 0; i < 4; i++)
+    printf("%u ", file_selectors);
   
   return 0;
 }

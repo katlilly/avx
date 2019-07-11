@@ -195,3 +195,44 @@ int Simple10avx::decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_
   
   return dgaps_decompressed;
 }
+
+
+
+/* 
+   write one compressed list to a file. First four bytes will be a list
+   length, n. Next n bytes are n selectors, next 64n bytes are
+   compressed data
+*/
+int Simple10avx::serialise(const char *filename, uint length, uint8_t *selectors, uint32_t *encoded)
+{
+  FILE *output = fopen(filename, "w");
+  printf("length: %d\n", length);
+  fwrite(&length, 4, 1, output);
+  fwrite(selectors, 1, length, output);
+  fwrite(encoded, 4, length*64, output);
+  
+  printf("okay so far\n");
+  fclose(output);
+  return true;
+}
+
+
+/* 
+   Read in one compressed list from file 
+*/
+int Simple10avx::readfromfile(const char *filename, uint32_t *comp_dest, uint8_t *selectors_dest)
+{
+  int length;
+  FILE *data = fopen(filename, "r");
+  fread(&length, 4, 1, data);
+  printf("length = %d\n", length);
+
+  selectors_dest = new uint8_t [length];
+  fread(selectors_dest, 1, length, data);
+
+  
+  comp_dest = new uint32_t [length];
+  fread(comp_dest, 4, length, data);
+  
+  return length;
+}
