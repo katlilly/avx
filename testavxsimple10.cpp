@@ -70,6 +70,7 @@ int main(void)
   uint32_t num_dgaps_compressed;
   num_dgaps_compressed = compressor->encode(encoded, postingslist, postingslist+length, selectors);
 
+  
   /* 
     Check for correct number of dgaps encoded 
   */
@@ -87,12 +88,16 @@ int main(void)
   uint32_t *decoded = new uint32_t[length * 2];
   int dgaps_decompressed = compressor->decode(decoded, encoded, encoded + compressor->num_compressed_32bit_words, selectors, 4);
   //dgaps_decompressed += compressor->decode(decoded + dgaps_decompressed, encoded + 16, encoded + compressor->num_compressed_32bit_words, selectors + 1);
-  
+
+  printf("decompressed %d dgaps\n", dgaps_decompressed);
   
   printf("\nraw | decoded:\n");
   for (int i = 0; i < dgaps_decompressed; i++)
+  {
+    if (i % 64 == 0)
+      printf("=============\n");
     printf("%2d  %2u\n", postingslist[i], decoded[i]);
-
+  }
   
   
   

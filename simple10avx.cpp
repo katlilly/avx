@@ -6,7 +6,7 @@
 
 void Simple10avx::print_512word_as_32ints(__m512i word)
 {
-  int *number = (int *) &word;
+  uint32_t *number = (uint32_t *) &word;
   for (int i = 0; i < 16; i++)
     printf("%d ", number[i]);
   printf("\n");
@@ -86,9 +86,6 @@ int Simple10avx::chose_selector(int *raw, int* end)
 // increment selector by 1 byte and dest by 64 bytes (16 ints / 512 bits)
 int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector)
 {
-  // will need to pack with zeros when we get to the end of a list to fill the register
-  // blocks of compressed data will be preceded by their compressed length
-  
   int length = end - raw;
   printf("\nremaining length = %d\n", length);
   printf("next value: %d\n", *raw);
@@ -99,6 +96,7 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
   selector[0] = selector_row;
   printf("chose selector %d, %d bits per int\n", selector_row, table[selector_row].bitwidth);
 
+
   /*
     Do the compression in a 512 bit register
   */
@@ -106,37 +104,77 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
   __m512i indexvector = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
   __m512i columnvector;
 
-  // will need to check for overrun here... and add zeros instead of
-  // whatever rubbish is after the end of my raw data
-  for (int i = 0; i < table[selector_row].intsper32; i++)
+  
+  // check if this is the last 512 bit word for this list
+  uint max_dgaps_packable = 16 * table[selector_row].intsper32;
+  if (length < max_dgaps_packable)
   {
-    if (raw + 16 > end)
-      break;
-    // gather next 16 ints into a 512 bit register
-    columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
+    printf("near the end of a list, %d dgaps remaining\n", length);
+    // do similar to below, but with more checking for end of list use
+    // the zeros column to pack zeros. for now i'm just not packing the
+    // last word, but should be returning correct "dgaps compressed"
+    // value
+    int i;
+    for (i = 0; i < table[selector_row].intsper32; i++)
+    {
+      if (raw + 16 > end)
+	{
+	  printf("raw plus 16 is beyond the end\n");
+	  break;
+	}
+      // gather next 16 ints into a 512 bit register
+      columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
+      
+      // left shift input to correct "column"
+      columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
+      
+      // pack this column of 16 dgaps into compressed 512 bit word
+      compressedword = _mm512_or_epi32(compressedword, columnvector);
+      raw += 16;
+    }
 
-    // left shift input to correct "column"
-    columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
+    // pack with zeros if necessary
+    __m512i zeros = _mm512_setzero_epi32();
 
-    // pack this column of 16 dgaps into compressed 512 bit word
-    compressedword = _mm512_or_epi32(compressedword, columnvector);
-    raw += 16;
+    while (i < table[selector_row].intsper32)
+    {
+      //      columnvector = _mm512_slli_epi32(zeros, table[selector_row].bitwidth * i);
+      compressedword = _mm512_or_epi32(compressedword, zeros);
+      i++;
+    }
+    
   }
 
-  /*
-    write out compressed data back to 32 bit ints
-  */
-  _mm512_i32scatter_epi32(dest, indexvector, compressedword, 4); 
+  else
+  { // in this case we don't need to check for end of list at all
+   
+    for (int i = 0; i < table[selector_row].intsper32; i++)
+    {
 
+      // gather next 16 ints into a 512 bit register
+      columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
+      
+      // left shift input to correct "column"
+      columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
+      
+      // pack this column of 16 dgaps into compressed 512 bit word
+      compressedword = _mm512_or_epi32(compressedword, columnvector);
+      raw += 16;
+    }
+
+    /*
+      write compressed data to memory as 32 bit ints
+    */
+    _mm512_i32scatter_epi32(dest, indexvector, compressedword, 4); 
+
+  }
+  
   /*
-    record size of compressed data and return number of dgaps compressed
+    record size of compressed data in class variables, and return number of dgaps compressed
   */
   num_compressed_512bit_words++;
   num_compressed_32bit_words += 16;
   return min(length, 16 * table[selector_row].intsper32);
-  // return value is correct, but would be good to be able to
-  // decompress only knowing the compressed size adn still get the
-  // right number of dgaps back out, so need to make sure i pack with zeros
 }
 
 
@@ -172,8 +210,8 @@ int Simple10avx::decode(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_
 int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *end, uint8_t *selectors)
 {
   int dgaps_decompressed = 0;
-  //while ( ...start with just first word for now
-
+  printf("encoded length remaining: %d\n", end - encoded);
+  
   // get information from selectors array
   int bits_per_dgap = table[selectors[0]].bitwidth;
   int dgaps_per_int = table[selectors[0]].intsper32;
@@ -188,6 +226,8 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
   __m512i compressed_word = _mm512_i32gather_epi32(indexvector, encoded, 4);
   
   __m512i decomp_vect; // a temporary 512 bit vector for decoding
+  
+
   for (int i = 0; i < dgaps_per_int; i++)
   {
     // get 16 dgaps by ANDing mask with compressed word
@@ -195,13 +235,37 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
 
     // write those 16 numbers to uint32_t array "dest"
     _mm512_i32scatter_epi32(dest, indexvector, decomp_vect, 4);
-
+    for (int j = 0; j < 16; j++)
+      printf("%d, ", dest[j]);
+    
     // right shift the remaining data in the compressed word
     compressed_word = _mm512_srli_epi32(compressed_word, bits_per_dgap);
 
     dgaps_decompressed += 16;
     dest += 16;
   }
+  
+  if (end - encoded == 16)
+  {
+    dest -= 16;
+      //this is the last word, need to find zeros to get correct decompressed length
+      printf("last word\n");
+      // there will be between zero and 16 * intersper32 zeros in the
+      // dest array now there may be a real zero in the first position
+      // in very rare cases, there won't be a end-marking zero in the
+      // first position ever. so start checking at dest+1
+      for (int i = 1; i < table[selectors[0]].intsper32 * 16; i++)
+	  if (dest[i] == 0)
+	    {
+	      dgaps_decompressed = i;
+	      break;
+	    }
+
+
+      printf("non-zero dgaps decompressed: %d\n", dgaps_decompressed);
+      
+  }
+
 
   // check for any dgap other than the first one being a zero? that won't always work?
   // if remaining length less than 64 check for any zeros?
