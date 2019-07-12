@@ -44,7 +44,8 @@ void Simple10avx::dgaps_to_bitwidths(int *dest, int *source, int length)
 
 
 /* 
-   Return the row number to use in the selector table
+   Returns the row number to use in the selector table
+   Takes pointers to start and end of a postings list
 */
 int Simple10avx::chose_selector(int *raw, int* end)
 {
@@ -244,13 +245,14 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
     dest += 16;
   }
 
+  
   /*
     In the last 512 bits of compressed data, it is necessary to find
     (by searching for zeros) where the end of the postings list is,
     because we only know the compressed size - not the list length -
     when beginning decompression
    */
-  if (end - encoded == 16) ////// this is not the right condition! ****************************
+  if (end - encoded == 16) 
   {
     /* 
        there will be between zero and 16 * intersper32 zeros in the
@@ -258,7 +260,10 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
        in very rare cases, but there won't every be an end-marking
        zero in the first position. So start checking at dest+1
     */
-    dest -= 16;
+    int backtrack = 16 * table[selectors[0]].intsper32;
+    //printf("backtrack distance: %d\n", backtrack);
+    dest -= backtrack;
+    //printf("last element in list: %d\n", *(--dest));
     for (int i = 1; i < table[selectors[0]].intsper32 * 16; i++)
       if (dest[i] == 0)
 	{

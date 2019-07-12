@@ -59,17 +59,12 @@ class Simple10avx
 
       table[9].intsper32 = 32;
       table[9].bitwidth = 1;
-
-      zeros_column = new uint32_t [16];
-      for (int i = 0; i < 16; i++)
-	zeros_column[i] = 0;
       
     }
 
   ~Simple10avx()
     {
       delete [] table;
-      delete [] zeros_column;
     }
 
  public:
