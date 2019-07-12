@@ -98,9 +98,10 @@ int main(void)
 					      selectors, 4);
   printf("decompressed %d dgaps\n", dgaps_decompressed);
   
-  printf("\nraw | decoded:\n");
+  printf("\n raw | decoded\n");
+  printf(" =============\n");
   for (int i = 0; i < dgaps_decompressed; i++)
-     printf("%2d  %2u\n", postingslist[i], decoded[i]);
+     printf("%4d | %3u\n", postingslist[i], decoded[i]);
 
   return 0;
 }

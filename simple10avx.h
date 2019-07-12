@@ -10,19 +10,12 @@ class Simple10avx
     int bitwidth;
   };
 
-  uint32_t *zeros_column;
-  int num_selectors;
   row *table;
-  int registerbits = 512;
   int num_compressed_512bit_words = 0;
   int num_compressed_32bit_words = 0;
 
  private:
-  // below will be used in decompression, not compression
-  //int current_list_length;
-  //int remaining_length;
-  //int current_selector;
-  
+  int num_selectors;
   
  public:
   Simple10avx()
@@ -69,18 +62,16 @@ class Simple10avx
 
  public:
   void print_table();
+  void print_512word_as_32ints(__m512i word);
   void dgaps_to_bitwidths(int *dest, int *source, int length);
   int encode(uint32_t *dest, int *raw, int* end, uint8_t *selectors);
-  void print_512word_as_32ints(__m512i word);
   int decode(uint32_t *dest, uint32_t *encoded, uint32_t *end,
 	     uint8_t *selectors, int num_sels);
-  int decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *end,
-		      uint8_t *selectors);
-
-
+ 
  private:
   int encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector);
   int chose_selector(int *raw, int* end);
   int min(int a, int b);
-  
+  int decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *end,
+		      uint8_t *selectors);
 };
