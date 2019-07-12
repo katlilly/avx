@@ -132,16 +132,6 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
       compressedword = _mm512_or_epi32(compressedword, columnvector);
       raw += 16;
     }
-
-    // pack with zeros if necessary
-    __m512i zeros = _mm512_setzero_epi32();
-
-    while (i < table[selector_row].intsper32)
-    {
-      //      columnvector = _mm512_slli_epi32(zeros, table[selector_row].bitwidth * i);
-      compressedword = _mm512_or_epi32(compressedword, zeros);
-      i++;
-    }
     
   }
 
@@ -221,13 +211,21 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
   printf("selector %d, %d bits per int, %d dgaps per int\n", *selectors,
 	 table[selectors[0]].bitwidth, table[selectors[0]].intsper32);
   
-  // load 512 bits of compressed data into a register
+  /* 
+     Load 512 bits of compressed data into a register 
+  */
   __m512i indexvector = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
   __m512i compressed_word = _mm512_i32gather_epi32(indexvector, encoded, 4);
-  
-  __m512i decomp_vect; // a temporary 512 bit vector for decoding
+
+  /* 
+     Declare a 512 bit vector for decoding into 
+  */
+  __m512i decomp_vect; 
   
 
+  /* 
+     Decompress 512 bits of encoded data
+   */
   for (int i = 0; i < dgaps_per_int; i++)
   {
     // get 16 dgaps by ANDing mask with compressed word
@@ -235,35 +233,42 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
 
     // write those 16 numbers to uint32_t array "dest"
     _mm512_i32scatter_epi32(dest, indexvector, decomp_vect, 4);
-    for (int j = 0; j < 16; j++)
-      printf("%d, ", dest[j]);
-    
+        
     // right shift the remaining data in the compressed word
     compressed_word = _mm512_srli_epi32(compressed_word, bits_per_dgap);
-
+    
     dgaps_decompressed += 16;
+    for (int j = 0; j < 16; j++)
+      printf("%2d, ", dest[j]);
+    printf("\n");
     dest += 16;
   }
-  
-  if (end - encoded == 16)
+
+  /*
+    In the last 512 bits of compressed data, it is necessary to find
+    (by searching for zeros) where the end of the postings list is,
+    because we only know the compressed size - not the list length -
+    when beginning decompression
+   */
+  if (end - encoded == 16) ////// this is not the right condition! ****************************
   {
+    /* 
+       there will be between zero and 16 * intersper32 zeros in the
+       dest array now. there may be a real zero in the first position
+       in very rare cases, but there won't every be an end-marking
+       zero in the first position. So start checking at dest+1
+    */
     dest -= 16;
-      //this is the last word, need to find zeros to get correct decompressed length
-      printf("last word\n");
-      // there will be between zero and 16 * intersper32 zeros in the
-      // dest array now there may be a real zero in the first position
-      // in very rare cases, there won't be a end-marking zero in the
-      // first position ever. so start checking at dest+1
-      for (int i = 1; i < table[selectors[0]].intsper32 * 16; i++)
-	  if (dest[i] == 0)
-	    {
-	      dgaps_decompressed = i;
-	      break;
-	    }
+    for (int i = 1; i < table[selectors[0]].intsper32 * 16; i++)
+      if (dest[i] == 0)
+	{
+	  return i;
+	  dgaps_decompressed = i;
+	  break;
+	}
+    
 
-
-      printf("non-zero dgaps decompressed: %d\n", dgaps_decompressed);
-      
+            
   }
 
 
