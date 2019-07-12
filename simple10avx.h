@@ -19,9 +19,9 @@ class Simple10avx
 
  private:
   // below will be used in decompression, not compression
-  int current_list_length;
-  int remaining_length;
-  int current_selector;
+  //int current_list_length;
+  //int remaining_length;
+  //int current_selector;
   
   
  public:
