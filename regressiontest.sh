@@ -1,5 +1,4 @@
 #!/bin/sh
 
-rm compressed.bin
-make
-./testavxSimple10
+g++ -Wall -march=native -o regtest simple10avx.cpp regtest.cpp
+./regtest
