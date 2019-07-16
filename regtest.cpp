@@ -57,7 +57,7 @@ int main(void)
   */
   for (uint i = length; i < length+16; i++)
     postingslist[i] = 0;
-  print_postings_list(postingslist, length+16);
+  //print_postings_list(postingslist, length+16);
   
 
   Simple10avx *compressor = new Simple10avx();
@@ -83,7 +83,7 @@ int main(void)
     Decompress one postings list
    */
   uint32_t *decoded = new uint32_t[length * 2];
-  int dgaps_decompressed = compressor->decode(decoded, encoded,
+  uint dgaps_decompressed = compressor->decode(decoded, encoded,
 					      encoded + compressor->num_compressed_32bit_words,
 					      selectors, 4);
 
@@ -93,8 +93,8 @@ int main(void)
     return 2;
   }
   
-  for (int i = 0; i < dgaps_decompressed; i++)
-    if (decoded[i] != postingslist[i])
+  for (uint i = 0; i < dgaps_decompressed; i++)
+    if (decoded[i] != (uint) postingslist[i])
     {  
       printf("failed to decode correctly\n");
       return 3;

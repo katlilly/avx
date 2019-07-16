@@ -31,8 +31,7 @@ void Simple10avx::print_table()
 {
   printf("\nSimple 10 AVX selector table:\n");
   for (int i = 0; i < num_selectors; i++)
-    printf("row %d: pack %2d dgaps, %d bits per dgap\n", i, table[i].intsper32,
-	   table[i].bitwidth);
+    printf("row %d: pack %2d dgaps, %d bits per dgap\n", i, table[i].intsper32, table[i].bitwidth);
 }
 
 /*
@@ -57,12 +56,12 @@ void Simple10avx::dgaps_to_bitwidths(int *dest, int *source, int length)
 */
 int Simple10avx::chose_selector(int *raw, int* end)
 {
-  int length = end - raw;
+  uint length = end - raw;
   int bitsused = 0;
   int column_bitwidth;
   int largest_column_bw = 0;
 
-  for (int i = 0; i < length; i += 16)
+  for (uint i = 0; i < length; i += 16)
   {
     int column = 0;
     for (int j = 0; j < 16; j++)
@@ -97,14 +96,14 @@ int Simple10avx::chose_selector(int *raw, int* end)
 */
 int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *selector)
 {
-  int length = end - raw;
+  uint length = end - raw;
 
   /*
     Chose and write out selector
   */
   uint8_t selector_row = chose_selector(raw, end);
   selector[0] = selector_row;
-  printf("chose selector %d, %d bits per int\n", selector_row, table[selector_row].bitwidth);
+  //printf("chose selector %d, %d bits per int\n", selector_row, table[selector_row].bitwidth);
 
   /*
     Do the compression in a 512 bit register
@@ -179,7 +178,7 @@ int Simple10avx::encode(uint32_t *dest, int *raw, int* end, uint8_t *selector)
   {
     dgaps_compressed += encode_one_word(dest, raw + dgaps_compressed, end, selector++);
     dest += 16;
-    printf("dgaps compressed: %d\n", dgaps_compressed);
+    //printf("dgaps compressed: %d\n", dgaps_compressed);
   }
 
   return dgaps_compressed;
@@ -243,9 +242,9 @@ int Simple10avx::decode_one_word(uint32_t *dest, uint32_t *encoded, uint32_t *en
     compressed_word = _mm512_srli_epi32(compressed_word, bits_per_dgap);
     
     dgaps_decompressed += 16;
-    for (int j = 0; j < 16; j++)
-      printf("%2d, ", dest[j]);
-    printf("\n");
+    //for (int j = 0; j < 16; j++)
+    //  printf("%2d, ", dest[j]);
+    //printf("\n");
     dest += 16;
   }
 
