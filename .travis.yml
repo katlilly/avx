@@ -17,7 +17,7 @@ install:
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 90
 
 script:
-  - g++ -Wall -std=c++11 -march=sandybridge -o regtest simple10avx.cpp regtest.cpp
+  - g++ -march=skylake-avx512 -Wall -std=c++11 -o regtest simple10avx.cpp regtest.cpp
   #- ./code_coverage.sh
   
 after_success:
