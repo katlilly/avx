@@ -1,0 +1,9 @@
+*.gcov
+*.gcda
+*.gcno
+*~
+*.bin
+regtest
+testavxSimple10
+avxSimple10
+a.out

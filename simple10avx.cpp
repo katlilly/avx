@@ -12,7 +12,7 @@ void Simple10avx::print_512word_as_32ints(__m512i word)
 {
   uint32_t *number = (uint32_t *) &word;
   for (int i = 0; i < 16; i++)
-    printf("%d ", number[i]);
+    printf("%u ", number[i]);
   printf("\n");
 }
 
