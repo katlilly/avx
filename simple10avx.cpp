@@ -124,7 +124,8 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
       columnvector = _mm512_i32gather_epi32(indexvector, raw, 4);
       
       // left shift input to correct "column"
-      columnvector = _mm512_slli_epi32(columnvector, table[selector_row].bitwidth * i);
+      uint8_t shift = table[selector_row].bitwidth * i;
+      columnvector = _mm512_slli_epi32(columnvector, shift);
       
       // pack this column of 16 dgaps into compressed 512 bit word
       compressedword = _mm512_or_epi32(compressedword, columnvector);
