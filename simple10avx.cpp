@@ -125,7 +125,7 @@ int Simple10avx::encode_one_word(uint32_t *dest, int *raw, int* end, uint8_t *se
       
       // left shift input to correct "column"
       const int shift = table[selector_row].bitwidth * i;
-      columnvector = _mm512_slli_epi32(columnvector, shift);
+      columnvector = _mm512_slli_epi32(columnvector, 0x4);
       
       // pack this column of 16 dgaps into compressed 512 bit word
       compressedword = _mm512_or_epi32(compressedword, columnvector);
