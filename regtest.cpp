@@ -100,6 +100,21 @@ int main(void)
       return 3;
     }
 
-  printf("All tests pass\n");
+  printf("All tests pass on compression and decompression of a single list\n");
+
+  struct list_location { int start; int length; };
+  int number_of_lists = 3;
+  FILE *postingsout = fopen("data/postings.bin", "w");
+  FILE *locationsout = fopen("data/locations.bin", "w");
+
+  int offset = ftell(postingsout);
+  int length_bytes = compressor->num_compressed_32bit_words * 4;
+  fwrite(&offset, 4, 1, locationsout);
+  fwrite(&length_bytes, 4, 1, locationsout);
+
+  fwrite(encoded, 1, length_bytes, postingsout);
+
+
+
   return 0;
 }

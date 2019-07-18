@@ -12,8 +12,8 @@ before_install:
 
 install: 
   # C++11
-  - sudo apt-get install -qq g++-5
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 90
+  - sudo apt-get install -qq g++-9
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
 
 script:
   - g++ -march=knl -Wall -std=c++11 -o regtest simple10avx.cpp regtest.cpp

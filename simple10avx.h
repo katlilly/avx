@@ -13,6 +13,7 @@ class Simple10avx
   row *table;
   int num_compressed_512bit_words = 0;
   int num_compressed_32bit_words = 0;
+  
 
  private:
   int num_selectors;
