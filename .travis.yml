@@ -16,8 +16,9 @@ install:
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
 
 script:
-  - g++ -march=knl -Wall -std=c++11 -o regtest simple10avx.cpp regtest.cpp
-  #- ./code_coverage.sh
+  - g++ -march=knl -Wall -std=c++11 -fprofile-arcs -ftest-coverage -o regtest simple10avx.cpp regtest.cpp
+  - ./regtest
+  - gcov regtest.cpp simple10avx.cpp
   
 after_success:
-  #- bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash)
